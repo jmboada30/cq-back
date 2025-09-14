@@ -2,6 +2,7 @@ export interface EnvVars {
   IP_HOST: string;
   HOST: string;
   PORT: number;
+  BASE_URL: string;
 
   JWT_SECRET: string;
   ADMIN_SECRET: string;

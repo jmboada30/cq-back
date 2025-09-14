@@ -8,6 +8,8 @@ const envSchema = joi
     HOST: joi.string().required(),
     PORT: joi.number().required(),
 
+    BASE_URL: joi.string().uri().required(),
+
     // Secrets
     JWT_SECRET: joi.string().required(),
     ADMIN_SECRET: joi.string().required(),
@@ -48,6 +50,8 @@ export const envs = {
   ipHost: value.IP_HOST,
   host: value.HOST,
   port: value.PORT,
+
+  baseUrl: value.BASE_URL,
   
   jwtSecret: value.JWT_SECRET,
   adminSecret: value.ADMIN_SECRET,

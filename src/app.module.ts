@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 
 import { CommonModule } from './modules/common/common.module';
 import { SharedModule } from './modules/shared/shared.module';
@@ -17,6 +19,7 @@ import { PostReactionsModule } from './modules/post-reactions/post-reactions.mod
 import { CommentReactionsModule } from './modules/comment-reactions/comment-reactions.module';
 import { BookmarksModule } from './modules/bookmarks/bookmarks.module';
 import { FollowAuthorsModule } from './modules/follow-authors/follow-authors.module';
+import { FilesModule } from './modules/files/files.module';
 
 @Module({
   imports: [
@@ -37,6 +40,14 @@ import { FollowAuthorsModule } from './modules/follow-authors/follow-authors.mod
     CommentReactionsModule,
     BookmarksModule,
     FollowAuthorsModule,
+    FilesModule,
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '../../', 'public'),
+    }),
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '../../', 'uploads'),
+      serveRoot: '/uploads', 
+    }),
   ],
   controllers: [],
   providers: [],

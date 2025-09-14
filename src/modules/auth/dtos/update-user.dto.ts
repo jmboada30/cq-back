@@ -36,15 +36,6 @@ export class UpdateUserDto {
   name: string;
 
   @ApiProperty({
-    description: 'Roles del usuario',
-    required: false,
-    enum: ['admin', 'user'],
-  })
-  @IsIn(['admin', 'user'])
-  @IsOptional()
-  roles: string;
-
-  @ApiProperty({
     description: 'ID del perfil del usuario',
     required: false,
   })
