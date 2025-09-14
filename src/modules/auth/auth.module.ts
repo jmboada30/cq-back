@@ -8,11 +8,12 @@ import { AuthController, UsersController } from './controllers';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { PrismaService } from '../prisma/prisma.service';
 import { envs } from '../config';
+import { DiscordStrategy } from './strategies/discord.strategy';
 
 @Global()
 @Module({
   controllers: [AuthController, UsersController],
-  providers: [AuthService, UsersService, JwtStrategy, PrismaService],
+  providers: [AuthService, UsersService, JwtStrategy,DiscordStrategy, PrismaService],
   imports: [
     ConfigModule,
 

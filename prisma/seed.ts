@@ -22,6 +22,22 @@ async function main() {
     },
   });
 
+  await prisma.profile.create({
+    data: {
+      name: 'Usuario',
+      Permissions: {
+        // Conectamos solo los permisos que un usuario estándar necesita.
+        // En este caso, solo permisos de LECTURA para varias entidades.
+        connect: [
+          ...permissionTo.user.filter(p => p.name.includes('read')),
+          ...permissionTo.profile.filter(p => p.name.includes('read')),
+          ...permissionTo.dropDown.filter(p => p.name.includes('read')),
+          ...permissionTo.menuItems.filter(p => p.name.includes('read')),
+        ],
+      },
+    },
+  });
+
   console.log(`Profiles seeding finished.`);
 
   await prisma.user.create({

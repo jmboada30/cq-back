@@ -69,6 +69,11 @@ export class AuthService {
 
     if (!user) throw new UnauthorizedException('Credentials invalid');
 
+    if (!user.password)
+      throw new UnauthorizedException(
+        'This account can only be accessed through a social provider.',
+      );
+
     const isCorrectPassword = await compareData(password, user.password);
 
     if (!isCorrectPassword)
@@ -124,46 +129,68 @@ export class AuthService {
   }
 
   async validateDiscordUser(profile: Profile) {
-    const { id: discordId, email, avatar, username } = profile;
+    const { id: providerId, email, avatar, username } = profile;
+    const provider = 'discord';
 
-    // 1. Buscar si el usuario ya existe por su discordId
-    let user = await this.prismaService.user.findUnique({
-      where: { discordId },
-      include: { Profile: { include: { Permissions: true } } }, // Incluimos perfil y permisos para CASL
+    // 1. Busca si ya existe una cuenta social con este proveedor y ID
+    const socialAccount = await this.prismaService.socialAccount.findUnique({
+      where: {
+        provider_providerId: { provider, providerId },
+      },
+      include: {
+        user: {
+          include: {
+            Profile: { include: { Permissions: true } },
+          },
+        },
+      },
     });
 
-    if (user) {
-      return user; // Si existe, lo retornamos
+    if (socialAccount) {
+      // Si la cuenta social existe, devuelve el usuario asociado
+      return socialAccount.user;
     }
 
-    // 2. Si no, buscar si existe un usuario con ese email para vincular la cuenta
+    // 2. Si no, busca si ya existe un usuario con ese email para vincular la cuenta
     if (email) {
-      const userByEmail = await this.prismaService.user.findUnique({ where: { email } });
+      const userByEmail = await this.prismaService.user.findUnique({
+        where: { email: email.toLowerCase() },
+        include: { Profile: { include: { Permissions: true } } },
+      });
+
       if (userByEmail) {
-        // Vinculamos la cuenta de Discord y retornamos el usuario
-        return this.prismaService.user.update({
-          where: { email },
-          data: { discordId, avatar },
-          include: { Profile: { include: { Permissions: true } } },
+        // El usuario existe, así que solo creamos y vinculamos la nueva cuenta social
+        await this.prismaService.socialAccount.create({
+          data: {
+            provider,
+            providerId,
+            avatar,
+            userId: userByEmail.id,
+          },
         });
+        return userByEmail;
       }
     }
 
-    // 3. Si no existe de ninguna forma, creamos un nuevo usuario
-    // OJO: La contraseña es nula, este usuario solo podrá loguearse con Discord.
-    // Asignamos un perfil por defecto a los nuevos usuarios. Debes tener uno creado.
+    // 3. Si no existe de ninguna forma, creamos un nuevo usuario Y su cuenta social vinculada
     const newUser = await this.prismaService.user.create({
       data: {
-        discordId,
         email: email.toLowerCase(),
         name: username,
-        avatar,
-        password: '', // O un valor aleatorio seguro si tu schema lo requiere como no-nulo
+        // La contraseña es nula, solo podrá loguearse con Discord
         isActive: true,
-        // Asignar un perfil por defecto es crucial para los permisos con CASL
         Profile: { connect: { id: DEFAULT_USER_PROFILE_ID } },
+        SocialAccounts: {
+          create: {
+            provider,
+            providerId,
+            avatar,
+          },
+        },
       },
-      include: { Profile: { include: { Permissions: true } } },
+      include: {
+        Profile: { include: { Permissions: true } },
+      },
     });
 
     return newUser;

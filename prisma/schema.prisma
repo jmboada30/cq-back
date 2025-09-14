@@ -29,7 +29,7 @@ enum MenuTypes {
 model User {
   id              Int               @id @default(autoincrement()) @map("id")
   email           String            @unique @map("email")
-  password        String            @map("password")
+  password        String?           @map("password")
   name            String            @map("name")
   roles           String            @default("user") @map("roles")
   isActive        Boolean           @default(true) @map("is_active")
@@ -49,9 +49,26 @@ model User {
   CommentReaction CommentReaction[]
   PostEditHistory PostEditHistory[]
   PostView        PostView[]
+  SocialAccounts SocialAccount[]
+  
 
   @@index([isDeleted])
   @@map("users")
+}
+
+model SocialAccount {
+  id         Int     @id @default(autoincrement())
+  provider   String  
+  providerId String  
+  avatar     String? 
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([provider, providerId]) 
+  @@map("social_accounts")
 }
 
 model Profile {
