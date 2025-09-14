@@ -26,6 +26,13 @@ const envSchema = joi
     DB_PS_PORT: joi.number().required(),
     DB_PS_DOCKER_PORT: joi.number().required(),
     DB_PS_DOCKER_VOLUME: joi.string().required(),
+
+   
+    // Discord
+    DISCORD_CLIENT_ID: joi.string().required(),
+    DISCORD_CLIENT_SECRET: joi.string().required(),
+    DISCORD_CALLBACK_URL: joi.string().uri().required(),
+
   })
   .unknown(true);
 
@@ -47,6 +54,10 @@ export const envs = {
 
   loginEmail: value.LOGIN_EMAIL,
   loginPassword: value.LOGIN_PASSWORD,
+
+  discordClientId : value.DISCORD_CLIENT_ID,
+  discordClientSecret: value.DISCORD_CLIENT_SECRET,
+  discordCallbackUrl: value.DISCORD_CALLBACK_URL,
 
   db: {
     username: value.DB_PS_USERNAME,

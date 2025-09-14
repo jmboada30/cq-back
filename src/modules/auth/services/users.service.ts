@@ -1,11 +1,13 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
 
 import { encryptData } from '../../common/utils/encryptData';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UpdateUserDto } from '../dtos';
+import { UpdatePasswordDto } from '../dtos/update-password.dto';
 
 @Injectable()
 export class UsersService {
+  private readonly logger = new Logger(UsersService.name);
   constructor(private prismaService: PrismaService) {}
 
   async findAll() {
@@ -15,7 +17,7 @@ export class UsersService {
         id: true,
         email: true,
         name: true,
-        roles: true,
+        
       },
     });
   }
@@ -27,8 +29,7 @@ export class UsersService {
         id: true,
         email: true,
         name: true,
-        roles: true,
-
+       
         Profile: {
           include: {
             Permissions: true,
@@ -62,5 +63,42 @@ export class UsersService {
       where: { id },
       data: { isDeleted: true },
     });
+  }
+
+
+  async updatePassword(userId:number, updatePasswordDto:UpdatePasswordDto){
+    try {
+      const {password} = updatePasswordDto;
+
+      const user = await this.prismaService.user.findFirst({
+        where:{id: userId}
+      })
+
+      if(!user) throw new BadRequestException('Usuario no esta logueado');
+
+      return await this.prismaService.user.update({
+        where:{
+          id:userId
+        },
+        data:{
+          password:await encryptData(password)
+        }
+      })
+    } catch (error) {
+      this.logger.error(
+        `Error al actualizar contraseña para el usuario Id: ${userId}: ${error.message}`,
+        error.stack,
+      );
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+      // Para cualquier otro error, lanzamos uno genérico y controlado.
+      throw new InternalServerErrorException(
+        'Ocurrió un error inesperado al actualizar contraseña.',
+      );
+    }
   }
 }

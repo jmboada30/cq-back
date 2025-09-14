@@ -5,6 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { Profile } from 'passport-discord'
 
 import { compareData, encryptData } from '../../common/utils/encryptData';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -13,6 +14,7 @@ import { LoginUserDto } from '../dtos/login-user.dto';
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
 import { ModelUser } from '../interfaces/model-auth.interface';
 
+const DEFAULT_USER_PROFILE_ID = 2;
 @Injectable()
 export class AuthService {
   constructor(
@@ -23,18 +25,23 @@ export class AuthService {
 
   async create(createUserDto: RegisterUserDto) {
     try {
-      const { password, ...userData } = createUserDto;
+      const { password,profileId, ...userData } = createUserDto;
 
       const user = await this.prismaService.user.create({
         data: {
           ...userData,
+          slug:'',
           email: createUserDto.email.toLowerCase(),
           password: await encryptData(password),
+          Profile:{
+            connect:{
+              id: profileId || DEFAULT_USER_PROFILE_ID
+            }
+          }
         },
         select: {
           id: true,
           email: true,
-          roles: true,
           isActive: true,
         },
       });
@@ -54,13 +61,17 @@ export class AuthService {
       select: {
         id: true,
         email: true,
-        roles: true,
         isActive: true,
         password: true,
       },
     });
 
     if (!user) throw new UnauthorizedException('Credentials invalid');
+
+    if (!user.password)
+      throw new UnauthorizedException(
+        'This account can only be accessed through a social provider.',
+      );
 
     const isCorrectPassword = await compareData(password, user.password);
 
@@ -80,7 +91,7 @@ export class AuthService {
       select: {
         id: true,
         email: true,
-        roles: true,
+       
         isActive: true,
         password: true,
       },
@@ -93,8 +104,6 @@ export class AuthService {
 
     delete (user as ModelUser)?.password;
 
-    if (!user.roles.includes('admin'))
-      throw new UnauthorizedException('User is not an admin');
 
     return { isAuthorized: true };
   }
@@ -104,7 +113,7 @@ export class AuthService {
     return { ...user, jwt: this.getJsonWebToken({ uid: user.id }) };
   }
 
-  private getJsonWebToken(payload: JwtPayload) {
+  public getJsonWebToken(payload: JwtPayload) {
     return this.jwtService.sign(payload);
   }
 
@@ -114,5 +123,74 @@ export class AuthService {
     console.log(error);
 
     throw new InternalServerErrorException('Something went wrong');
+  }
+
+  async validateDiscordUser(profile: Profile) {
+    const { id: providerId, email, avatar, username } = profile;
+    const provider = 'discord';
+
+    // 1. Busca si ya existe una cuenta social con este proveedor y ID
+    const socialAccount = await this.prismaService.socialAccount.findUnique({
+      where: {
+        provider_providerId: { provider, providerId },
+      },
+      include: {
+        user: {
+          include: {
+            Profile: { include: { Permissions: true } },
+          },
+        },
+      },
+    });
+
+    if (socialAccount) {
+      // Si la cuenta social existe, devuelve el usuario asociado
+      return socialAccount.user;
+    }
+
+    // 2. Si no, busca si ya existe un usuario con ese email para vincular la cuenta
+    if (email) {
+      const userByEmail = await this.prismaService.user.findUnique({
+        where: { email: email.toLowerCase() },
+        include: { Profile: { include: { Permissions: true } } },
+      });
+
+      if (userByEmail) {
+        // El usuario existe, así que solo creamos y vinculamos la nueva cuenta social
+        await this.prismaService.socialAccount.create({
+          data: {
+            provider,
+            providerId,
+            avatar,
+            userId: userByEmail.id,
+          },
+        });
+        return userByEmail;
+      }
+    }
+
+    // 3. Si no existe de ninguna forma, creamos un nuevo usuario Y su cuenta social vinculada
+    const newUser = await this.prismaService.user.create({
+      data: {
+        email: email.toLowerCase(),
+        name: username,
+        slug: '',
+        // La contraseña es nula, solo podrá loguearse con Discord
+        isActive: true,
+        Profile: { connect: { id: DEFAULT_USER_PROFILE_ID } },
+        SocialAccounts: {
+          create: {
+            provider,
+            providerId,
+            avatar,
+          },
+        },
+      },
+      include: {
+        Profile: { include: { Permissions: true } },
+      },
+    });
+
+    return newUser;
   }
 }
