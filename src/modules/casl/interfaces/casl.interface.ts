@@ -9,6 +9,14 @@ export enum SubjectsEnum {
   Profile = 'Profile',
   Permission = 'Permission',
   MenuItems = 'MenuItems',
+  Category = 'Category',
+  Tag = 'Tag',
+  Post = 'Post',
+  Comment = 'Comment',
+  PostReaction = 'PostReaction',
+  CommentReaction = 'CommentReaction',
+  Bookmark = 'Bookmark',
+  FollowAuthor = 'FollowAuthor',
   All = 'all',
 }
 
