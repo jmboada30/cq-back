@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, UseGuards, Res } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards, Res,} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import type { Response } from 'express'; // Usa "import type" para la anotación
@@ -76,4 +76,6 @@ export class AuthController {
     // Asegúrate de reemplazar esta URL con la real de tu frontend
     res.redirect(`http://localhost:4200/auth/callback?token=${jwt}`);
   }
+
+  
 }

@@ -21,6 +21,7 @@ import { UpdateUserDto } from '../dtos';
 
 import { GetUser } from '../decorators';
 import type { ModelUser } from '../interfaces/model-auth.interface';
+import { UpdatePasswordDto } from '../dtos/update-password.dto';
 
 @ApiBearerAuth('JWT')
 @UseGuards(AuthGuard('jwt'), PoliciesGuard)
@@ -59,4 +60,11 @@ export class UsersController {
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.usersService.remove(id);
   }
+
+  @Patch()
+  @CheckPolicies((ability) => ability.can(Action.Delete, 'User'))
+  updatePassword(@GetUser() user: ModelUser, @Body() updatePassword:UpdatePasswordDto) {
+    return this.usersService.updatePassword(user.id, updatePassword);
+  }
+
 }
