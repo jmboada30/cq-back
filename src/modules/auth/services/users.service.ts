@@ -17,7 +17,7 @@ export class UsersService {
         id: true,
         email: true,
         name: true,
-        roles: true,
+        
       },
     });
   }
@@ -29,8 +29,7 @@ export class UsersService {
         id: true,
         email: true,
         name: true,
-        roles: true,
-
+       
         Profile: {
           include: {
             Permissions: true,

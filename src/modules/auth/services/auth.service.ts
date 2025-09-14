@@ -30,6 +30,7 @@ export class AuthService {
       const user = await this.prismaService.user.create({
         data: {
           ...userData,
+          slug:'',
           email: createUserDto.email.toLowerCase(),
           password: await encryptData(password),
           Profile:{
@@ -41,7 +42,6 @@ export class AuthService {
         select: {
           id: true,
           email: true,
-          roles: true,
           isActive: true,
         },
       });
@@ -61,7 +61,6 @@ export class AuthService {
       select: {
         id: true,
         email: true,
-        roles: true,
         isActive: true,
         password: true,
       },
@@ -92,7 +91,7 @@ export class AuthService {
       select: {
         id: true,
         email: true,
-        roles: true,
+       
         isActive: true,
         password: true,
       },
@@ -105,8 +104,6 @@ export class AuthService {
 
     delete (user as ModelUser)?.password;
 
-    if (!user.roles.includes('admin'))
-      throw new UnauthorizedException('User is not an admin');
 
     return { isAuthorized: true };
   }
@@ -177,6 +174,7 @@ export class AuthService {
       data: {
         email: email.toLowerCase(),
         name: username,
+        slug: '',
         // La contraseña es nula, solo podrá loguearse con Discord
         isActive: true,
         Profile: { connect: { id: DEFAULT_USER_PROFILE_ID } },

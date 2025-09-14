@@ -46,9 +46,9 @@ async function main() {
       password: await hashSync(
         process.env.LOGIN_PASSWORD || 'defaultPassword1!',
       ),
-      roles: 'admin',
       name: 'SysAdmin',
-      profileId: 1,
+      slug:'gerente',
+      profileId: 1
     },
   });
 
