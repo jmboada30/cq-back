@@ -5,6 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { Profile } from 'passport-discord'
 
 import { compareData, encryptData } from '../../common/utils/encryptData';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -13,6 +14,7 @@ import { LoginUserDto } from '../dtos/login-user.dto';
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
 import { ModelUser } from '../interfaces/model-auth.interface';
 
+const DEFAULT_USER_PROFILE_ID = 2;
 @Injectable()
 export class AuthService {
   constructor(
@@ -23,13 +25,18 @@ export class AuthService {
 
   async create(createUserDto: RegisterUserDto) {
     try {
-      const { password, ...userData } = createUserDto;
+      const { password,profileId, ...userData } = createUserDto;
 
       const user = await this.prismaService.user.create({
         data: {
           ...userData,
           email: createUserDto.email.toLowerCase(),
           password: await encryptData(password),
+          Profile:{
+            connect:{
+              id: profileId || DEFAULT_USER_PROFILE_ID
+            }
+          }
         },
         select: {
           id: true,
@@ -104,7 +111,7 @@ export class AuthService {
     return { ...user, jwt: this.getJsonWebToken({ uid: user.id }) };
   }
 
-  private getJsonWebToken(payload: JwtPayload) {
+  public getJsonWebToken(payload: JwtPayload) {
     return this.jwtService.sign(payload);
   }
 
@@ -114,5 +121,51 @@ export class AuthService {
     console.log(error);
 
     throw new InternalServerErrorException('Something went wrong');
+  }
+
+  async validateDiscordUser(profile: Profile) {
+    const { id: discordId, email, avatar, username } = profile;
+
+    // 1. Buscar si el usuario ya existe por su discordId
+    let user = await this.prismaService.user.findUnique({
+      where: { discordId },
+      include: { Profile: { include: { Permissions: true } } }, // Incluimos perfil y permisos para CASL
+    });
+
+    if (user) {
+      return user; // Si existe, lo retornamos
+    }
+
+    // 2. Si no, buscar si existe un usuario con ese email para vincular la cuenta
+    if (email) {
+      const userByEmail = await this.prismaService.user.findUnique({ where: { email } });
+      if (userByEmail) {
+        // Vinculamos la cuenta de Discord y retornamos el usuario
+        return this.prismaService.user.update({
+          where: { email },
+          data: { discordId, avatar },
+          include: { Profile: { include: { Permissions: true } } },
+        });
+      }
+    }
+
+    // 3. Si no existe de ninguna forma, creamos un nuevo usuario
+    // OJO: La contraseña es nula, este usuario solo podrá loguearse con Discord.
+    // Asignamos un perfil por defecto a los nuevos usuarios. Debes tener uno creado.
+    const newUser = await this.prismaService.user.create({
+      data: {
+        discordId,
+        email: email.toLowerCase(),
+        name: username,
+        avatar,
+        password: '', // O un valor aleatorio seguro si tu schema lo requiere como no-nulo
+        isActive: true,
+        // Asignar un perfil por defecto es crucial para los permisos con CASL
+        Profile: { connect: { id: DEFAULT_USER_PROFILE_ID } },
+      },
+      include: { Profile: { include: { Permissions: true } } },
+    });
+
+    return newUser;
   }
 }

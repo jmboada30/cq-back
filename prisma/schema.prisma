@@ -32,6 +32,8 @@ model User {
   password  String   @map("password")
   name      String   @map("name")
   roles     String   @default("user") @map("roles")
+  discordId String? @unique // ID único de Discord, opcional
+  avatar    String? // URL del avatar de Discord, opcional
   isActive  Boolean  @default(true) @map("is_active")
   isDeleted Boolean  @default(false) @map("is_deleted")
   createdAt DateTime @default(now()) @map("created_at")
