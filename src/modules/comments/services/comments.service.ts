@@ -32,13 +32,19 @@ export class CommentsService {
       orderBy: [{ createdAt: 'desc' }],
       take: limit,
       skip: offset,
+      include:{
+        author:true
+      }
     });
     const total = await this.prisma.comment.count({ where });
     return { data, total };
   }
 
   async findOne(id: number) {
-    const res = await this.prisma.comment.findUnique({ where: { id } });
+    const res = await this.prisma.comment.findUnique({ where: { id },
+      include:{
+        author:true
+      } });
     if (!res) throw new BadRequestException('Comment not found');
     return res;
   }

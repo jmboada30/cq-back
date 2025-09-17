@@ -35,6 +35,9 @@ export class PostReactionsService {
       orderBy: { createdAt: 'desc' },
       take: limit,
       skip: offset,
+      include: {
+        user:true
+      } 
     });
     const total = await this.prisma.postReaction.count({ where });
     return { data, total };

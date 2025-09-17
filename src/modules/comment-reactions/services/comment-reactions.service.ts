@@ -33,6 +33,9 @@ export class CommentReactionsService {
       orderBy: { createdAt: 'desc' },
       take: limit,
       skip: offset,
+      include:{
+        user:true
+      }
     });
     const total = await this.prisma.commentReaction.count({ where });
     return { data, total };
