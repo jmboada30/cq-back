@@ -40,13 +40,18 @@ export class PostsService {
       orderBy: [{ isPinned: 'desc' }, { publishedAt: 'desc' }, { createdAt: 'desc' }],
       take: limit,
       skip: offset,
+      include:{
+        author:true
+      }
     });
     const total = await this.prisma.post.count({ where });
     return { data, total };
   }
 
   async findOne(id: number) {
-    const res = await this.prisma.post.findUnique({ where: { id } });
+    const res = await this.prisma.post.findUnique({ where: { id }, include: {
+      author:true
+    } });
     if (!res) throw new BadRequestException('Post not found');
     return res;
   }
