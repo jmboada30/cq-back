@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/modules/prisma/prisma.service';
 import { CommentFilterDto, CreateCommentDto, UpdateCommentDto } from '../dtos';
+import { UserLogged } from 'src/modules/casl/interfaces';
 
 @Injectable()
 export class CommentsService {
@@ -19,7 +20,7 @@ export class CommentsService {
     });
   }
 
-  async findAll(filters: CommentFilterDto) {
+  async findAll(filters: CommentFilterDto, user:UserLogged) {
     const { postId, parentId, authorId, status, limit = 50, offset = 0 } = filters;
     const where: Prisma.CommentWhereInput = {};
     if (postId) where.postId = postId;
@@ -33,7 +34,17 @@ export class CommentsService {
       take: limit,
       skip: offset,
       include:{
-        author:true
+        author:true,
+        _count:{
+          select:{ 
+            reactions:true,
+          }
+        },
+        reactions: {
+          where: {
+            userId: user.id
+          },
+        }
       }
     });
     const total = await this.prisma.comment.count({ where });

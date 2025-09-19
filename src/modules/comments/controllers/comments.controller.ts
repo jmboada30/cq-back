@@ -17,6 +17,8 @@ import { CommentFilterDto, CreateCommentDto, UpdateCommentDto } from '../dtos';
 import { PoliciesGuard } from 'src/modules/casl/guards';
 import { Action, CheckPolicies } from 'src/modules/casl/decorators';
 import { GetUser } from 'src/modules/auth/decorators';
+import type { UserLogged } from 'src/modules/casl/interfaces';
+
 
 @ApiTags('Comments')
 @ApiBearerAuth('JWT')
@@ -33,8 +35,8 @@ export class CommentsController {
 
   @Get()
   @CheckPolicies((ability) => ability.can(Action.Read, 'Comment'))
-  findAll(@Query() filters: CommentFilterDto) {
-    return this.commentsService.findAll(filters);
+  findAll(@Query() filters: CommentFilterDto, @GetUser() user: UserLogged) {
+    return this.commentsService.findAll(filters, user);
   }
 
   @Get(':id')

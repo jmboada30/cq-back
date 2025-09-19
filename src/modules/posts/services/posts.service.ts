@@ -21,7 +21,7 @@ export class PostsService {
       isPinned: dto.isPinned ?? false,
       scheduledAt: dto.scheduledAt ? new Date(dto.scheduledAt) : undefined,
     };
-    return this.prisma.post.create({ data });
+    return await this.prisma.post.create({ data });
   }
 
   async findAll(filters: PostFilterDto, user:UserLogged) {
@@ -51,7 +51,7 @@ export class PostsService {
         },
         reactions: {
           where: {
-            userId: user.id, // Asumiendo que 'user.id' contiene el ID del usuario logueado
+            userId: user.id,
           },
         }
       }
