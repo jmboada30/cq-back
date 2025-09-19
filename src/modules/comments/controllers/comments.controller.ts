@@ -53,7 +53,7 @@ export class CommentsController {
 
   @Delete(':id')
   @CheckPolicies((ability) => ability.can(Action.Delete, 'Comment'))
-  remove(@Param('id', ParseIntPipe) id: number) {
+  remove(@Param('id', ParseIntPipe) id: number) { 
     return this.commentsService.remove(id);
   }
 }
