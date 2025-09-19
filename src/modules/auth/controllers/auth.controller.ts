@@ -74,7 +74,7 @@ export class AuthController {
     // Redirigimos al frontend con el token
     // (puedes pasarlo por query params, o manejarlo de otra forma)
     // Asegúrate de reemplazar esta URL con la real de tu frontend
-    res.redirect(`http://localhost:4200/auth/callback?token=${jwt}`);
+    res.redirect(`http://localhost:9000/#/auth/callback?token=${jwt}`);
   }
 
   
