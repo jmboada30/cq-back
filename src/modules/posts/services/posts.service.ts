@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { Prisma, PostStatus } from '@prisma/client';
 import { PrismaService } from 'src/modules/prisma/prisma.service';
 import { CreatePostDto, PostFilterDto, UpdatePostDto } from '../dtos';
+import { UserLogged } from 'src/modules/casl/interfaces';
 
 @Injectable()
 export class PostsService {
@@ -23,7 +24,7 @@ export class PostsService {
     return this.prisma.post.create({ data });
   }
 
-  async findAll(filters: PostFilterDto) {
+  async findAll(filters: PostFilterDto, user:UserLogged) {
     const { inputSearch, status, authorId, categoryId, tagId, limit = 50, offset = 0 } = filters;
     const where: Prisma.PostWhereInput = {};
     if (status) where.status = status;
@@ -41,9 +42,21 @@ export class PostsService {
       take: limit,
       skip: offset,
       include:{
-        author:true
+        author:true,
+        _count:{
+          select:{ 
+            reactions:true,
+            comments:true
+          }
+        },
+        reactions: {
+          where: {
+            userId: user.id, // Asumiendo que 'user.id' contiene el ID del usuario logueado
+          },
+        }
       }
     });
+
     const total = await this.prisma.post.count({ where });
     return { data, total };
   }

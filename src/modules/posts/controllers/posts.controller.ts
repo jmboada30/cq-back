@@ -17,6 +17,7 @@ import { CreatePostDto, PostFilterDto, UpdatePostDto } from '../dtos';
 import { PoliciesGuard } from 'src/modules/casl/guards';
 import { Action, CheckPolicies } from 'src/modules/casl/decorators';
 import { GetUser } from 'src/modules/auth/decorators';
+import type { UserLogged } from 'src/modules/casl/interfaces';
 
 @ApiTags('Posts')
 @ApiBearerAuth('JWT')
@@ -33,8 +34,8 @@ export class PostsController {
 
   @Get()
   @CheckPolicies((ability) => ability.can(Action.Read, 'Post'))
-  findAll(@Query() filters: PostFilterDto) {
-    return this.postsService.findAll(filters);
+  findAll(@Query() filters: PostFilterDto,@GetUser() user: UserLogged) {
+    return this.postsService.findAll(filters, user);
   }
 
   @Get(':id')
