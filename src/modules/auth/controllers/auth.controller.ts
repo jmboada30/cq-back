@@ -18,9 +18,6 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
-  @ApiBearerAuth('JWT')
-  @UseGuards(AuthGuard('jwt'), PoliciesGuard)
-  @CheckPolicies((ability) => ability.can(Action.Create, 'User'))
   create(@Body() createUserDto: RegisterUserDto) {
     return this.authService.create(createUserDto);
   }

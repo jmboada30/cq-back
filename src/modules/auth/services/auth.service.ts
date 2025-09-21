@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   InternalServerErrorException,
   UnauthorizedException,
@@ -13,6 +14,8 @@ import { RegisterUserDto } from '../dtos/register-user.dto';
 import { LoginUserDto } from '../dtos/login-user.dto';
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
 import { ModelUser } from '../interfaces/model-auth.interface';
+import slugify from 'slugify';
+import { randomBytes } from 'crypto';
 
 const DEFAULT_USER_PROFILE_ID = 2;
 @Injectable()
@@ -23,21 +26,53 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
+  private async _generateUniqueSlug(name: string): Promise<string> {
+    const baseSlug = slugify(name, {
+      lower: true,     
+      strict: true,     
+      trim: true,      
+    });
+
+    let finalSlug = baseSlug;
+    let isSlugTaken = await this.prismaService.user.findUnique({
+      where: { slug: finalSlug },
+    });
+
+    while (isSlugTaken) {
+      const randomSuffix = randomBytes(2).toString('hex');
+      finalSlug = `${baseSlug}-${randomSuffix}`;
+      
+      isSlugTaken = await this.prismaService.user.findUnique({
+        where: { slug: finalSlug },
+      });
+    }
+
+    return finalSlug;
+  }
+
   async create(createUserDto: RegisterUserDto) {
     try {
-      const { password,profileId, ...userData } = createUserDto;
+      const { email, password, name } = createUserDto;
+
+      const existingUser = await this.prismaService.user.findFirst({
+        where: { email: email.toLowerCase() },
+      });
+
+      if (existingUser) {
+        throw new ConflictException(
+          `Ya existe un usuario usando este email = "${email}".`,
+        );
+      }
+      
+      const uniqueSlug = await this._generateUniqueSlug(name);
 
       const user = await this.prismaService.user.create({
         data: {
-          ...userData,
-          slug:'',
+          slug: uniqueSlug, 
           email: createUserDto.email.toLowerCase(),
           password: await encryptData(password),
-          Profile:{
-            connect:{
-              id: profileId || DEFAULT_USER_PROFILE_ID
-            }
-          }
+          name,
+          profileId: DEFAULT_USER_PROFILE_ID,
         },
         select: {
           id: true,
@@ -46,12 +81,20 @@ export class AuthService {
         },
       });
 
-      return { ...user, jwt: this.getJsonWebToken({ uid: user.id }) };
+     
+      return { jwt: this.getJsonWebToken({ uid: user.id }) };
     } catch (error) {
-      this.handleError(error);
+      if (
+        error instanceof BadRequestException ||
+        error instanceof ConflictException
+      ) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        'Ocurrió un error inesperado al registrar el usuario.',
+      );
     }
   }
-
   async login(loginUserDto: LoginUserDto) {
     const email = loginUserDto.email.toLowerCase();
     const password = loginUserDto.password;
