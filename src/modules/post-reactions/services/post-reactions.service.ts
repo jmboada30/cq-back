@@ -15,11 +15,11 @@ export class PostReactionsService {
         postId_userId_type: {
           postId: dto.postId,
           userId,
-          type: dto.type,
+          
         },
       },
       create: { postId: dto.postId, userId, type: dto.type },
-      update: {},
+      update: {type: dto.type,},
     });
   }
 

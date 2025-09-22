@@ -13,11 +13,11 @@ export class CommentReactionsService {
         commentId_userId_type: {
           commentId: dto.commentId,
           userId,
-          type: dto.type,
+          
         },
       },
       create: { commentId: dto.commentId, userId, type: dto.type },
-      update: {},
+      update: {type: dto.type,},
     });
   }
 
